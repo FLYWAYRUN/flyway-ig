@@ -1,12 +1,4 @@
 # -*- coding: utf-8 -*-
-"""Publish anything in schedule.json whose time has come.
-
-env:
-  IG_USER_ID        numeric id from `python3 auth.py me <token>`
-  IG_ACCESS_TOKEN   long-lived token
-  ASSET_BASE_URL    e.g. https://<user>.github.io/flyway-ig
-  DRY_RUN           set to 1 to print what would post and stop
-"""
 import os, json, time, datetime, urllib.parse, urllib.request, urllib.error
 
 HOST  = 'https://graph.instagram.com'
@@ -14,10 +6,13 @@ HERE  = os.path.dirname(os.path.abspath(__file__))
 SCHED = os.path.join(HERE, 'schedule.json')
 KST   = datetime.timezone(datetime.timedelta(hours=9))
 
-UID    = os.environ.get('IG_USER_ID', '') or 'me'
-TOKEN  = os.environ.get('IG_ACCESS_TOKEN', '')
-BASE   = os.environ.get('ASSET_BASE_URL', '').rstrip('/')
-DRY    = os.environ.get('DRY_RUN') == '1'
+UID   = os.environ.get('IG_USER_ID', '') or 'me'
+TOKEN = os.environ.get('IG_ACCESS_TOKEN', '')
+BASE  = os.environ.get('ASSET_BASE_URL', '').rstrip('/')
+DRY   = os.environ.get('DRY_RUN') == '1'
+
+CANDIDATES = ['v23.0/{u}', '{u}', 'v23.0/me', 'me', 'v21.0/{u}', 'v18.0/{u}']
+PATH = None
 
 def _call(path, params):
     data = urllib.parse.urlencode(params).encode()
@@ -26,24 +21,26 @@ def _call(path, params):
         return json.loads(r.read().decode())
 
 def post(suffix, params):
-    """POST /{uid}/{suffix}. Falls back to /me/{suffix} if the id is rejected,
-    so a wrong IG_USER_ID does not cost you a failed run."""
-    try:
-        return _call(f'{UID}/{suffix}', params)
-    except urllib.error.HTTPError as e:
-        body = e.read().decode()
-        retryable = e.code in (400, 404) and (
-            'does not exist' in body or 'Unsupported' in body or 'nonexisting' in body)
-        if not retryable:
-            raise SystemExit(f'API error {e.code}: {body[:500]}')
-        print(f'   id {UID} rejected, retrying as /me/')
+    global PATH
+    if PATH:
         try:
-            return _call(f'me/{suffix}', params)
-        except urllib.error.HTTPError as e2:
-            raise SystemExit(f'API error {e2.code}: {e2.read().decode()[:500]}')
+            return _call(f'{PATH}/{suffix}', params)
+        except urllib.error.HTTPError as e:
+            raise SystemExit(f'API error {e.code}: {e.read().decode()[:400]}')
+    errs = []
+    for cand in CANDIDATES:
+        base = cand.format(u=UID)
+        try:
+            out = _call(f'{base}/{suffix}', params)
+            PATH = base
+            print(f'   path OK -> {base}/')
+            return out
+        except urllib.error.HTTPError as e:
+            errs.append(f'     {base:16} {e.code}  {e.read().decode()[:150]}')
+    raise SystemExit('every path shape failed:\n' + '\n'.join(errs))
 
 def due(row, now):
-    if row['status'] != 'ready' or not row['when']:
+    if row.get('status') != 'ready' or not row.get('when'):
         return False
     t = datetime.datetime.strptime(row['when'], '%Y-%m-%d %H:%M').replace(tzinfo=KST)
     return t <= now
@@ -62,13 +59,13 @@ def main():
         print(f"→ {r['id']}  {r['when']}  {img}")
         if DRY:
             print('   [dry run]'); continue
-        c = post(f'{UID}/media', {'image_url': img, 'caption': r['caption'],
-                                  'access_token': TOKEN})
-        time.sleep(5)                       # let Meta fetch and process the image
-        p = post(f'{UID}/media_publish', {'creation_id': c['id'], 'access_token': TOKEN})
-        r['status'], r['media_id'] = 'posted', p.get('id','')
+        c = post('media', {'image_url': img, 'caption': r['caption'],
+                           'access_token': TOKEN})
+        time.sleep(5)
+        p = post('media_publish', {'creation_id': c['id'], 'access_token': TOKEN})
+        r['status'], r['media_id'] = 'posted', p.get('id', '')
         print('   published', p.get('id'))
-        json.dump(rows, open(SCHED,'w',encoding='utf-8'), ensure_ascii=False, indent=2)
+        json.dump(rows, open(SCHED, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
         time.sleep(3)
     print('done:', len(todo), 'post(s)')
 
