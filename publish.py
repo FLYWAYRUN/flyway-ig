@@ -1,4 +1,12 @@
 # -*- coding: utf-8 -*-
+"""Publish anything in schedule.json whose time has come.
+
+env:
+  IG_USER_ID        numeric id from https://graph.instagram.com/me?fields=user_id
+  IG_ACCESS_TOKEN   long-lived token
+  ASSET_BASE_URL    e.g. https://flywayrun.github.io/flyway-ig
+  DRY_RUN=1         print what would post and stop
+"""
 import os, json, time, datetime, urllib.parse, urllib.request, urllib.error
 
 HOST  = 'https://graph.instagram.com'
@@ -11,6 +19,7 @@ TOKEN = os.environ.get('IG_ACCESS_TOKEN', '')
 BASE  = os.environ.get('ASSET_BASE_URL', '').rstrip('/')
 DRY   = os.environ.get('DRY_RUN') == '1'
 
+# graph.instagram.com is picky about the path shape; probe until one answers.
 CANDIDATES = ['v23.0/{u}', '{u}', 'v23.0/me', 'me', 'v21.0/{u}', 'v18.0/{u}']
 PATH = None
 

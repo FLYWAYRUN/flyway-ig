@@ -1,12 +1,31 @@
 # -*- coding: utf-8 -*-
-"""FLYWAY content source. Add a dict here, run render.py, done."""
+"""FLYWAY content source. Add a dict here, run render.py, done.
+
+Two separate fields, on purpose:
+  intent  — English. What this caption has to accomplish. A brief, not a source text.
+  caption — Thai. Written fresh from the intent, never translated from English.
+Never write the Thai by translating the intent. Write it as if the intent
+had never been in English at all.
+"""
+import json, os
 from svgs import SVG_RIVER, SVG_MTN, SVG_CITY
 
 POSTS = [
+ dict(id='13', type='art', eyebrow='The name', size=132, foot='Est. 2027',
+      head='Runners<br>migrate<br>too.',
+      sub='Fifty million birds move along this corridor every season.<br>'
+          'We built a running trip on the same line.',
+      caption='นักวิ่งก็อพยพเหมือนกัน\n\nทุกฤดูกาล มีสิ่งมีชีวิตห้าสิบล้านชีวิตเคลื่อนตัวไปตามเส้นทางนี้ จากเอเชียตะวันออกเฉียงใต้ขึ้นไปถึงคาบสมุทรเกาหลี\n\nเราสร้างทริปวิ่งขึ้นมาบนเส้นเดียวกัน\n\n#Flyway #FlywayRunTrip #RunSeoul'),
+
+ dict(id='14', type='art', eyebrow='Run Trip 01 &middot; Seoul', size=136, foot='April 2027',
+      head='Three<br>mornings.<br>One city.',
+      sub='A river at sunset. A mountain at dawn. A city before it wakes.',
+      caption='สามเช้า หนึ่งเมือง\n\nแม่น้ำตอนพระอาทิตย์ตก ภูเขาตอนฟ้าสาง และเมืองก่อนที่มันจะตื่น\n\nเมษายน 2027 · โซล\n\n#Flyway #RunSeoul #วิ่งเกาหลี'),
+
  dict(id='01', type='statement', eyebrow='The name', size=168, foot='Est. 2027',
       head='Flyway.',
       sub='There is a migration corridor running from Southeast Asia to the Korean peninsula. '
-          'Fifty million bodies move along it every season, chasing air. '
+          'Fifty million birds move along it every season, chasing air. '
           'We built a running trip on the same line.',
       caption='ฟลายเวย์\n\nมีเส้นทางอพยพเส้นหนึ่ง ลากจากเอเชียตะวันออกเฉียงใต้ขึ้นไปถึงคาบสมุทรเกาหลี\nทุกฤดูกาล มีสิ่งมีชีวิตห้าสิบล้านชีวิตเคลื่อนตัวไปตามเส้นนั้น เพื่อตามหาอากาศ\n\nเราสร้างทริปวิ่งขึ้นมาบนเส้นเดียวกัน\n\n#Flyway #FlywayRunTrip #RunSeoul'),
 
@@ -70,3 +89,12 @@ POSTS = [
       sub='Dates tentative. Routes confirmed. More soon.',
       caption='เมษายน โซล และคุณ\n\nวันที่ยังไม่ฟิกซ์ เส้นทางฟิกซ์แล้ว เดี๋ยวมีมาอีก\n\n#Flyway #FlywayRunTrip #RunSeoul'),
 ]
+
+# ── Thai captions live in captions.json, not in this file ──────────────
+# Edit that file (plain JSON, no Python syntax to break) and it wins.
+_CAPS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'captions.json')
+if os.path.exists(_CAPS):
+    _c = json.load(open(_CAPS, encoding='utf-8'))
+    for _p in POSTS:
+        if _c.get(_p['id']):
+            _p['caption'] = _c[_p['id']]

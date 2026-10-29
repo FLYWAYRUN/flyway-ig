@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """content.py -> docs/img/*.png  + docs/index.html contact sheet."""
-import asyncio, os, json, datetime
+import asyncio, os, sys, json, datetime
 from playwright.async_api import async_playwright
 import tpl, content
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'art'))
+import photoposter as poster
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 IMG  = os.path.join(HERE, 'docs', 'img')
@@ -14,6 +16,11 @@ async def main():
         pg = await br.new_page(viewport={'width':1080,'height':1350}, device_scale_factor=1)
         tmp = os.path.join(IMG, '_tmp.html')
         for post in content.POSTS:
+            if post['type'] == 'art':
+                post = dict(post, art=poster.make(
+                    post.get('art_kind', 'tall'),
+                    os.path.join(HERE, 'build', f"bg_{post['id']}.png"),
+                    seed=int(post['id']) * 7 + 4))
             open(tmp,'w',encoding='utf-8').write(tpl.render(post))
             await pg.goto('file://' + tmp)
             await pg.wait_for_timeout(700)

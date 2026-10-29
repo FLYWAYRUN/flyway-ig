@@ -93,5 +93,28 @@ def t_route(d):
     ) % (d['eyebrow'], d['head'], d['name'], d['svg'], rows,
          brand(d.get('foot','Run Trip &middot; 2027'))))
 
-T = {'statement': t_statement, 'stat': t_stat, 'compare': t_compare, 'route': t_route}
+def t_art(d):
+    """Headline over a generated runner poster. d['art'] = absolute file path."""
+    return BASE % (FONTS, (
+      '<div class="card" style="padding:0;background:#D4FF36">'
+      '<img src="file://%s" style="position:absolute;inset:0;width:100%%;height:100%%;'
+      'object-fit:cover">'
+      '<div style="position:absolute;inset:0;padding:78px 72px 72px;display:flex;'
+      'flex-direction:column">'
+      '<div class="mono" style="color:rgba(0,0,0,.62)">%s</div>'
+      '<div style="height:52px"></div>'
+      '<h1 class="dx" style="font-size:%spx;color:#08090B">%s</h1>'
+      '<span class="rule" style="width:64px;height:6px;background:#08090B;margin:34px 0 26px"></span>'
+      '<div style="font-size:26px;color:rgba(0,0,0,.74);line-height:1.5;max-width:780px">%s</div>'
+      '<div class="spacer"></div>'
+      '<div style="display:flex;justify-content:space-between;align-items:center;'
+      'border-top:2px solid rgba(0,0,0,.26);padding-top:26px">'
+      '<div class="dx" style="font-size:26px;letter-spacing:.14em;color:#08090B">Flyway</div>'
+      '<div class="mono" style="font-size:16px;color:rgba(0,0,0,.62)">%s</div>'
+      '</div></div></div>'
+    ) % (d['art'], d['eyebrow'], d.get('size', 128), d['head'], d['sub'],
+         d.get('foot', 'Run Trip &middot; 2027')))
+
+T = {'statement': t_statement, 'stat': t_stat, 'compare': t_compare,
+     'route': t_route, 'art': t_art}
 def render(post): return T[post['type']](post)
